@@ -6,7 +6,10 @@
      $subName = $sub.Name
         
      $vms = Get-AzVM -Status 
-     $tags = Get-AzVM | Select Tags
+     $tags = Get-AzVM |
+    Select-Object -Property (
+        @{name='Tags'; expression = {($_.tags.GetEnumerator().ForEach({ '{0} = {1}' -f $_.key, $_.value }) -join ', ')}}
+    )
      $publicIps = Get-AzPublicIpAddress 
      $nics = Get-AzNetworkInterface | ?{ $_.VirtualMachine -NE $null} 
      foreach ($nic in $nics) { 
@@ -17,9 +20,7 @@
                  $info.PublicIPAddress = $publicIp.ipaddress
                  } 
              }
-             foreach($tag in $tags) {
-                $info.tags = $tag
-                }
+
 
              $info.VmId = $vm.vmid
              $os = $vm.StorageProfile.ImageReference.Offer
@@ -30,6 +31,7 @@
              $info.ResourceGroupName = $vm.ResourceGroupName 
              $info.VmSize = $vm.HardwareProfile.VmSize
              $osDisk = Get-AzDisk -ResourceGroupName $vm.ResourceGroupName -DiskName $osDiskName
+             $info.tags = $tags
              $report+=$info
              } 
      }
